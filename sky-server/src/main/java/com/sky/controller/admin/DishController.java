@@ -4,6 +4,7 @@ import com.github.pagehelper.Page;
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
+import com.sky.mapper.DishMapper;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.DishService;
@@ -24,6 +25,8 @@ public class DishController {
 
     @Autowired
     private DishService dishService;
+    @Autowired
+    private DishMapper dishMapper;
 
     @PostMapping
     @ApiOperation("新增菜品")
@@ -74,4 +77,14 @@ public class DishController {
 
         return Result.success();
     }
+
+    @GetMapping("/list")
+    @ApiOperation("根据分类id查询菜品")
+    public Result<List<Dish>> list(Long categoryId){
+//        System.out.println(categoryId);
+        List<Dish> dishes = dishService.getByCategoryId(categoryId);
+
+        return Result.success(dishes);
+    }
+
 }
