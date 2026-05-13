@@ -11,3 +11,8 @@ sky:
     access-key-id: <your-aliyun-access-key-id>
     access-key-secret: <your-aliyun-access-key-secret>
     endpoint: oss-cn-beijing.aliyuncs.com
+  redis:
+    host: localhost
+    port: 6379
+    password: a123456
+    database: 0
