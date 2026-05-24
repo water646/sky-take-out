@@ -6,6 +6,7 @@ import com.sky.entity.Orders;
 import com.sky.vo.OrderStatisticsVO;
 import org.apache.ibatis.annotations.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -36,4 +37,8 @@ public interface OrderMapper {
 
     @Select("select status,count(*) as counts from orders group by status")
     List<HashMap<String,Integer>> statistics();
+
+    //查询未付款的超时订单
+    @Select("select * from orders where status = #{status} and order_time < #{orderTime}")
+    List<Orders> getByStatusAndOrderTimeLT(@Param("status") Integer status, @Param("orderTime") LocalDateTime orderTime);
 }

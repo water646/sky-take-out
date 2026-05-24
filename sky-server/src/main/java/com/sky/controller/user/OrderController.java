@@ -1,6 +1,7 @@
 package com.sky.controller.user;
 
 
+import com.sky.dto.OrdersCancelDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
@@ -43,11 +44,12 @@ public class OrderController {
      */
     @PutMapping("/payment")
     @ApiOperation("订单支付")
-    public Result<OrderPaymentVO> payment(@RequestBody OrdersPaymentDTO ordersPaymentDTO) throws Exception {
+    public Result payment(@RequestBody OrdersPaymentDTO ordersPaymentDTO) throws Exception {
         log.info("订单支付：{}", ordersPaymentDTO);
-        OrderPaymentVO orderPaymentVO = orderService.payment(ordersPaymentDTO);
-        log.info("生成预支付交易单：{}", orderPaymentVO);
-        return Result.success(orderPaymentVO);
+//        OrderPaymentVO orderPaymentVO = orderService.payment(ordersPaymentDTO);
+        orderService.paySuccess(ordersPaymentDTO.getOrderNumber());
+//        log.info("生成预支付交易单：{}", orderPaymentVO);
+        return Result.success();
     }
 
     @GetMapping("/historyOrders")
@@ -75,8 +77,10 @@ public class OrderController {
     @PutMapping("/cancel/{id}")
     @ApiOperation("用户取消订单")
     public Result cancel(@PathVariable Long id) {
-
-        orderService.cancelOrder(id);
+        OrdersCancelDTO  ordersCancelDTO = new OrdersCancelDTO();
+        ordersCancelDTO.setId(id);
+        ordersCancelDTO.setCancelReason("用户取消");
+        orderService.cancelOrder(ordersCancelDTO);
 
         return Result.success();
     }

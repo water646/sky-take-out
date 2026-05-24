@@ -1,7 +1,10 @@
 package com.sky.controller.admin;
 
 
+import com.sky.dto.OrdersCancelDTO;
+import com.sky.dto.OrdersConfirmDTO;
 import com.sky.dto.OrdersPageQueryDTO;
+import com.sky.dto.OrdersRejectionDTO;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
@@ -11,9 +14,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Slf4j
@@ -41,6 +42,51 @@ public class OrderController {
         return Result.success(orderStatisticsVO);
     }
 
+    @PutMapping("/confirm")
+    @ApiOperation("接单")
+    public Result confirm(@RequestBody OrdersConfirmDTO ordersConfirmDTO) {
+        Long id = ordersConfirmDTO.getId();
+
+        orderService.confirmOrder(id);
+
+        return Result.success();
+    }
+
+    @PutMapping("/rejection")
+    @ApiOperation("拒单")
+    public Result reject(@RequestBody OrdersRejectionDTO ordersRejectionDTO) {
+
+        orderService.rejectOrder(ordersRejectionDTO);
+
+        return Result.success();
+    }
+
+    @PutMapping("/cancel")
+    @ApiOperation("商家取消订单")
+    public Result cancel(OrdersCancelDTO ordersCancelDTO) {
+
+        orderService.cancelOrder(ordersCancelDTO);
+
+        return Result.success();
+    }
+
+    @PutMapping("/delivery/{id}")
+    @ApiOperation("派送订单")
+    public Result delivery(@PathVariable Long id) {
+
+        orderService.orderDelivery(id);
+
+        return Result.success();
+    }
+
+    @PutMapping("/complete/{id}")
+    @ApiOperation("完成订单")
+    public Result complete(@PathVariable Long id) {
+
+        orderService.orderComplete(id);
+
+        return Result.success();
+    }
 
 
 }
