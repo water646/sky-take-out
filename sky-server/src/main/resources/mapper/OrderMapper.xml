@@ -80,6 +80,73 @@
         </where>
     </select>
 
+    <update id="updateCheckUnpaid" parameterType="com.sky.entity.Orders">
+        update orders
+        <set>
+            <if test="cancelReason != null and cancelReason!='' ">
+                cancel_reason=#{cancelReason},
+            </if>
+            <if test="rejectionReason != null and rejectionReason!='' ">
+                rejection_reason=#{rejectionReason},
+            </if>
+            <if test="cancelTime != null">
+                cancel_time=#{cancelTime},
+            </if>
+            <if test="payStatus != null">
+                pay_status=#{payStatus},
+            </if>
+            <if test="payMethod != null">
+                pay_method=#{payMethod},
+            </if>
+            <if test="checkoutTime != null">
+                checkout_time=#{checkoutTime},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="deliveryTime != null">
+                delivery_time = #{deliveryTime}
+            </if>
+        </set>
+        where id = #{id} and status = 1
+    </update>
+
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(*) from orders
+        <where>
+            <if test="beginTime!=null">
+                and order_time &gt; #{beginTime}
+            </if>
+            <if test="endTime!=null">
+                and order_time &lt; #{endTime}
+            </if>
+            <if test="status!=null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <select id="getSalesTop" resultType="com.sky.dto.GoodsSalesDTO">
+        select od.name as name,SUM(od.number) as number
+        from order_detail od
+        join orders o on od.order_id = o.id
+        <where>
+            <if test="beginTime!=null">
+                and o.order_time &gt; #{beginTime}
+            </if>
+            <if test="endTime!=null">
+                and o.order_time &lt; #{endTime}
+            </if>
+            <if test="status!=null">
+                and o.status = #{status}
+            </if>
+        </where>
+        group by od.name
+        order by number desc
+        limit 0,10
+    </select>
+
+
 
 
 </mapper>

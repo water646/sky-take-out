@@ -10,6 +10,7 @@ import javax.websocket.server.ServerEndpoint;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * WebSocket服务
@@ -19,7 +20,9 @@ import java.util.Map;
 public class WebSocketServer {
 
     //存放会话对象
-    private static Map<String, Session> sessionMap = new HashMap();
+    //可能有多个线程进行连接、断开等操作，保证线程安全需要使用ConcurrentHashMap!!
+    private static Map<String, Session> sessionMap = new ConcurrentHashMap<>();
+
 
     /**
      * 连接建立成功调用的方法

@@ -1,9 +1,11 @@
 package com.sky.mapper;
 
 import com.github.pagehelper.Page;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
 import com.sky.vo.OrderStatisticsVO;
+import com.sky.vo.SalesTop10ReportVO;
 import org.apache.ibatis.annotations.*;
 
 import java.math.BigDecimal;
@@ -30,6 +32,9 @@ public interface OrderMapper {
      */
     void update(Orders orders);
 
+    //修改订单状态前，检查订单状态为待支付，防止取消和支付并发修改状态导致混乱
+    void updateCheckUnpaid(Orders order);
+
     Page<Orders> pageQuery(Orders order);
 
     @Select("select * from orders where id=#{orderId}")
@@ -45,4 +50,9 @@ public interface OrderMapper {
     List<Orders> getByStatusAndOrderTimeLT(@Param("status") Integer status, @Param("orderTime") LocalDateTime orderTime);
 
     Double sumByMap(Map map);
+
+    Integer countByMap(Map map);
+
+    //select od.name as name,SUM(od.number) as sales from order_detail od join orders o on od.order_id = o.id where o.order_time > ? and o.order_time < ? and o.status = ? group by od.name order by sales desc limit 0,10
+    List<GoodsSalesDTO> getSalesTop(Map map);
 }

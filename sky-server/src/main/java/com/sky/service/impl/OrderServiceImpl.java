@@ -160,7 +160,7 @@ public class OrderServiceImpl implements OrderService {
                 .checkoutTime(LocalDateTime.now())
                 .build();
 
-        orderMapper.update(orders);
+        orderMapper.updateCheckUnpaid(orders);
 
         //通过websocket向商家端发送支付完成提醒
         Map map = new HashMap();
@@ -238,7 +238,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.setCancelReason(cancelReason);
 
-        orderMapper.update(order);
+        //只有待支付状态的订单可以取消，防止支付与取消并发
+        orderMapper.updateCheckUnpaid(order);
     }
 
     //再来一单
@@ -329,7 +330,7 @@ public class OrderServiceImpl implements OrderService {
                 .cancelTime(LocalDateTime.now())
                 .build();
 
-        orderMapper.update(order);
+        orderMapper.updateCheckUnpaid(order);
     }
 
     //派送订单
