@@ -8,19 +8,27 @@ import com.sky.mapper.OrderDetailMapper;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
-import com.sky.vo.OrderReportVO;
-import com.sky.vo.SalesTop10ReportVO;
-import com.sky.vo.TurnoverReportVO;
-import com.sky.vo.UserReportVO;
+import com.sky.service.WorkspaceService;
+import com.sky.vo.*;
 import io.swagger.annotations.ApiOperation;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,12 +46,12 @@ public class ReportServiceImpl implements ReportService {
     //用构造器也能实现对象注入，让类能被完整地创建，而不是创建出来再注入属性
     private OrderMapper orderMapper;
     private UserMapper userMapper;
-    private OrderDetailMapper orderDetailMapper;
+    private WorkspaceService workspaceService;
 
-    public ReportServiceImpl(OrderMapper orderMapper,UserMapper userMapper) {
+    public ReportServiceImpl(OrderMapper orderMapper,UserMapper userMapper,WorkspaceService workspaceService) {
         this.orderMapper=orderMapper;
         this.userMapper=userMapper;
-        this.orderDetailMapper=orderDetailMapper;
+        this.workspaceService=workspaceService;
     }
 
     //营业额统计
@@ -101,14 +109,13 @@ public class ReportServiceImpl implements ReportService {
             map.put("endTime", endTime);
 
             //每日新增用户数量
-            Integer sum = userMapper.countByDate(map);
-            newUserList.add(sum);
-
-            //总用户数量
-            map.put("beginTime", beginTime);
             Integer total = userMapper.countByDate(map);
             totalUserList.add(total);
 
+            //总用户数量
+            map.put("beginTime", beginTime);
+            Integer sum = userMapper.countByDate(map);
+            newUserList.add(sum);
         }
 
 //        System.out.println(totalUserList);
@@ -200,5 +207,72 @@ public class ReportServiceImpl implements ReportService {
                 .nameList(StringUtils.join(nameList,","))
                 .numberList(StringUtils.join(numberList,","))
                 .build();
+    }
+
+    //导出数据报表
+    public void exportBusinessData(HttpServletResponse response) throws IOException {
+
+        //查询概览数据
+        LocalDate beginDate = LocalDate.now().minusDays(30);
+        LocalDate endDate = LocalDate.now().minusDays(1);
+
+        LocalDateTime beginTime = LocalDateTime.of(beginDate, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(endDate, LocalTime.MAX);
+
+
+        System.out.println(beginTime);
+        System.out.println(endTime);
+        BusinessDataVO businessDataVO = workspaceService.getBusinessData(beginTime, endTime);
+
+        //把数据放进excel表中
+        InputStream in = this.getClass().getClassLoader().getResourceAsStream("template/运营数据报表模板.xlsx");
+
+        //基于模板文件，创建新的excel
+        try{
+            XSSFWorkbook excel = new XSSFWorkbook(in);
+
+            //填充excel数据
+            XSSFSheet sheet = excel.getSheet("Sheet1");
+            XSSFRow row4 = sheet.getRow(3);
+            XSSFRow row5 = sheet.getRow(4);
+
+            sheet.getRow(1).getCell(1).setCellValue("时间:"+beginDate+"至"+endDate);
+            row4.getCell(2).setCellValue(businessDataVO.getTurnover());
+            row4.getCell(4).setCellValue(businessDataVO.getOrderCompletionRate());
+            row4.getCell(6).setCellValue(businessDataVO.getNewUsers());
+            row5.getCell(2).setCellValue(businessDataVO.getValidOrderCount());
+            row5.getCell(4).setCellValue(businessDataVO.getUnitPrice());
+
+            for(int i=0;i<30;i++){
+                LocalDate date = beginDate.plusDays(i);
+                //查询某一天的营业数据
+                businessDataVO = workspaceService.getBusinessData(LocalDateTime.of(date, LocalTime.MIN), LocalDateTime.of(date, LocalTime.MAX));
+
+                XSSFRow currentRow = sheet.getRow(7+i);
+                currentRow.getCell(1).setCellValue(date.toString());
+                currentRow.getCell(2).setCellValue(businessDataVO.getTurnover());
+                currentRow.getCell(3).setCellValue(businessDataVO.getValidOrderCount());
+                currentRow.getCell(4).setCellValue(businessDataVO.getOrderCompletionRate());
+                currentRow.getCell(5).setCellValue(businessDataVO.getUnitPrice());
+                currentRow.getCell(6).setCellValue(businessDataVO.getNewUsers());
+            }
+
+
+            //通过输出流下载到客户端浏览器
+            ServletOutputStream out = response.getOutputStream();
+            excel.write(out);
+
+            //关闭资源
+            out.close();
+            excel.close();
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+
+
+
     }
 }
