@@ -11,6 +11,7 @@ import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
 import com.sky.exception.DeletionNotAllowedException;
+import com.sky.exception.StatusNotExistException;
 import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealDishMapper;
@@ -97,12 +98,6 @@ public class DishServiceImpl implements DishService {
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
 
-        //删除菜品数据
-//        for(Long id:ids){
-//            dishMapper.deleteById(id);
-//            //删除菜品的口味数据
-//            dishFlavorMapper.deleteByDishId(id);
-//        }
 
         //优化批量删除
         dishMapper.deleteByIds(ids);
@@ -111,6 +106,11 @@ public class DishServiceImpl implements DishService {
 
     //起售停售菜品
     public void startOrStop(Integer status , Long id){
+        //新增：检查目标菜品状态是否合法
+        if(status!=StatusConstant.ENABLE&&status!=StatusConstant.DISABLE){
+            throw new StatusNotExistException(MessageConstant.DISH_STATUS_ERROR);
+        }
+
         Dish dish = Dish.builder()
                 .id(id)
                 .status(status)

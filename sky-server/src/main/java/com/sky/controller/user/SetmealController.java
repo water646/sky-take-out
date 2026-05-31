@@ -1,9 +1,11 @@
 package com.sky.controller.user;
 
+import com.sky.config.BloomFilterConfiguration;
 import com.sky.constant.StatusConstant;
 import com.sky.entity.Setmeal;
 import com.sky.result.Result;
 import com.sky.service.SetmealService;
+import com.sky.utils.BloomFilterUtil;
 import com.sky.vo.DishItemVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -22,6 +24,8 @@ import java.util.List;
 public class SetmealController {
     @Autowired
     private SetmealService setmealService;
+    @Autowired
+    private BloomFilterUtil bloomFilterUtil;
 
     /**
      * 条件查询
@@ -31,13 +35,18 @@ public class SetmealController {
      */
     @GetMapping("/list")
     @ApiOperation("根据分类id查询套餐")
-    @Cacheable(cacheNames = "setmealCache",key = "#categoryId")
+    @Cacheable(cacheNames = "setmealCache",key = "#categoryId")     //缓存查到了就不执行方法，直接返回，相关的还有 @CachePut:一定执行方法并缓存结果
     public Result<List<Setmeal>> list(Long categoryId) {
+        if(!bloomFilterUtil.mightContainCategoryId(categoryId)){
+            return Result.error("分类id不存在");
+        }
+
         Setmeal setmeal = new Setmeal();
         setmeal.setCategoryId(categoryId);
         setmeal.setStatus(StatusConstant.ENABLE);
 
         List<Setmeal> list = setmealService.list(setmeal);
+
         return Result.success(list);
     }
 

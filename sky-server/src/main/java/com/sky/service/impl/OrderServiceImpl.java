@@ -10,6 +10,7 @@ import com.sky.dto.*;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
+import com.sky.exception.OrderStatusException;
 import com.sky.exception.ShoppingCartBusinessException;
 import com.sky.mapper.*;
 import com.sky.result.PageResult;
@@ -160,7 +161,11 @@ public class OrderServiceImpl implements OrderService {
                 .checkoutTime(LocalDateTime.now())
                 .build();
 
-        orderMapper.updateCheckUnpaid(orders);
+        //只有待支付的订单可以被支付，防止用户支付了取消的订单
+        int rows = orderMapper.updateCheckUnpaid(orders);
+        if(rows==0){
+            throw new OrderStatusException("订单已取消或已支付");
+        }
 
         //通过websocket向商家端发送支付完成提醒
         Map map = new HashMap();

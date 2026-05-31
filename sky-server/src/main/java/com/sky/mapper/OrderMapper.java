@@ -33,7 +33,7 @@ public interface OrderMapper {
     void update(Orders orders);
 
     //修改订单状态前，检查订单状态为待支付，防止取消和支付并发修改状态导致混乱
-    void updateCheckUnpaid(Orders order);
+    int updateCheckUnpaid(Orders order);
 
     Page<Orders> pageQuery(Orders order);
 

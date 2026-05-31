@@ -55,4 +55,7 @@ public interface CategoryMapper {
 
     @Select("select * from category where id=#{id}")
     Category getById(Long id);
+
+    @Select("select id from category")
+    List<Long> getAllCategoryIds();
 }
