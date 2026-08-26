@@ -22,6 +22,7 @@ import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,8 @@ public class OrderServiceImpl implements OrderService {
     private UserMapper userMapper;
     @Autowired
     private WebSocketServer webSocketServer;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Transactional
     public OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO) {
@@ -110,6 +113,18 @@ public class OrderServiceImpl implements OrderService {
                 .orderNumber(orders.getNumber())
                 .build();
 
+        //延时消息投送MQ，定时检查订单有没有支付，这样就不用定时任务了
+        MultiDelayMessageDTO multiDelayMessageDTO = new MultiDelayMessageDTO();
+        multiDelayMessageDTO.setOrderId(orders.getId());
+        List<Integer> delay = new ArrayList<>();
+        delay.addAll(List.of(10000,20000,30000,60000,60000,180000,300000,600000,600000));
+        multiDelayMessageDTO.setDelay(delay);
+
+        rabbitTemplate.convertAndSend("order.delay.direct", "delay",multiDelayMessageDTO,msg->{
+            msg.getMessageProperties().setDelay(10000);
+            return msg;
+        });
+
         return orderSubmitVO;
 
     }
@@ -144,11 +159,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * 支付成功，修改订单状态
+     * 支付成功，修改订单状态，返回更新了状态的订单数
      *
      * @param outTradeNo
      */
-    public void paySuccess(String outTradeNo) {
+    public int paySuccess(String outTradeNo) {
 
         // 根据订单号查询订单
         Orders ordersDB = orderMapper.getByNumber(outTradeNo);
@@ -161,21 +176,32 @@ public class OrderServiceImpl implements OrderService {
                 .checkoutTime(LocalDateTime.now())
                 .build();
 
-        //只有待支付的订单可以被支付，防止用户支付了取消的订单
+        //只有待支付的订单可以转变订单状态，防止用户支付了取消的订单
         int rows = orderMapper.updateCheckUnpaid(orders);
         if(rows==0){
             throw new OrderStatusException("订单已取消或已支付");
         }
+        log.info("支付成功");
+
+        //通知商家来单
+        notifyMerchant(outTradeNo);
+
+        return rows;
+    }
+
+    //向商家发送来单提醒
+    private void notifyMerchant(String outTradeNo){
+        // 根据订单号查询订单
+        Orders ordersDB = orderMapper.getByNumber(outTradeNo);
 
         //通过websocket向商家端发送支付完成提醒
         Map map = new HashMap();
         map.put("type",1);      //1表示来单提醒，2表示催单
-        map.put("orderId",orders.getId());
+        map.put("orderId",ordersDB.getId());
         map.put("content","订单号:"+outTradeNo);
         String json = JSON.toJSONString(map);
 
         webSocketServer.sendToAllClient(json);
-
     }
 
     //分页查询

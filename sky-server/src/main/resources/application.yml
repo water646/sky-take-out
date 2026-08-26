@@ -17,6 +17,12 @@ spring:
     port: ${sky.redis.port}
     password: ${sky.redis.password}
     database: ${sky.redis.database}
+  rabbitmq:
+    host: localhost
+    port: 5672
+    virtual-host: /sky
+    username: sky_takeout
+    password: 123
 
 
 mybatis:

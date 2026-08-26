@@ -4,11 +4,8 @@ import com.github.pagehelper.Page;
 import com.sky.dto.GoodsSalesDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
-import com.sky.vo.OrderStatisticsVO;
-import com.sky.vo.SalesTop10ReportVO;
 import org.apache.ibatis.annotations.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -28,9 +25,11 @@ public interface OrderMapper {
 
     /**
      * 修改订单信息
+     *
      * @param orders
+     * @return
      */
-    void update(Orders orders);
+    int update(Orders orders);
 
     //修改订单状态前，检查订单状态为待支付，防止取消和支付并发修改状态导致混乱
     int updateCheckUnpaid(Orders order);
